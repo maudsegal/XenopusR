@@ -1,0 +1,87 @@
+---
+title: "train_model"
+author: "Sander Devisscher"
+date: "2024-11-20"
+output: html_document
+---
+
+```{r install gibonR, eval = FALSE}
+devtools::install_github("DenaJGibbon/gibbonR")
+```
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(gibbonR)
+library(tidyverse)
+library(randomForest)
+```
+
+```{r fun: WAVtowav}
+WAVtowav <- function(input_dir, 
+                     output_dir = NULL){
+  # This function will convert all .WAV files in a directory to .wav files
+  # input_dir is the directory where the .WAV files are stored
+  # output_dir is the directory where the .wav files will be stored. If NULL, the .wav files will be stored in the input directory
+  # The function will return a list of the .wav files that were created
+  
+  # If the output directory is NULL, set it to the input directory
+  if(is.null(output_dir)){
+    output_dir <- input_dir
+  } else {
+    # If the output directory does not exist, create it
+    if(!dir.exists(output_dir)){
+      dir.create(output_dir)
+    }
+  }
+  
+  # Get a list of all the .WAV files in the input directory
+  list.of.wav.files <- list.files(input_dir, pattern = ".WAV", full.names = T)
+  
+  # Create a list to store the .wav files that are created
+  list.of.wav.files.created <- list()
+  
+  # Loop through the .WAV files
+  # Skip loop if no .WAV files are found
+  if(length(list.of.wav.files) == 0){
+    cat("No .WAV files found in the input directory")
+  }else{
+    for(x in 1:length(list.of.wav.files)){
+      # Get the name of the .WAV file
+      temp.wav.file <- list.of.wav.files[x]
+      
+      # Get the name of the .wav file
+      temp.wav.file.new <- gsub(".WAV", ".wav", temp.wav.file)
+      
+      # Create the new .wav file
+      file.copy(temp.wav.file, paste(output_dir, temp.wav.file.new, sep = "/"))
+      
+      # Add the new .wav file to the list
+      list.of.wav.files.created[[x]] <- paste(output_dir, temp.wav.file.new, sep = "/")
+    }
+  }
+  
+  # Return the list of .wav files that were created
+  return(list.of.wav.files.created)
+}
+
+```
+
+```{r set training data folder path}
+TrainingWavFilesDir <- "./input/trainingdata/"
+
+# Convert the .WAV files to .wav files
+list.of.wav.files <- WAVtowav(TrainingWavFilesDir)
+```
+
+```{r}
+test <- readWave(paste(TrainingWavFilesDir, "klauwkikker_1.wav", sep = ""))
+```
+
+```{r Read in clips and calculate MFCCs}
+trainingdata <- gibbonR::MFCCFunction(input.dir=TrainingWavFilesDir, min.freq = 400, max.freq = 1600,win.avg="standard")
+
+# Convert to a factor
+trainingdata$class <- as.factor(trainingdata$class)
+
+# Output a table to see sample size
+table(trainingdata$class)
+```
