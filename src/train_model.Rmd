@@ -85,3 +85,31 @@ trainingdata$class <- as.factor(trainingdata$class)
 # Output a table to see sample size
 table(trainingdata$class)
 ```
+
+```{r}
+trainingdata <- trainingdata[, sapply(trainingdata, function(x) length(unique(x)) > 1)]
+```
+
+```{r}
+trainingdata$class <- as.factor(trainingdata$class)
+
+
+ml.model.svm <- e1071::svm(trainingdata[, 2:ncol(trainingdata)], trainingdata$class, kernel = "radial", 
+                           cross = nrow(trainingdata),
+                           probability = TRUE)
+
+print(paste('SVM accuracy',ml.model.svm$tot.accuracy))
+
+
+ml.model.rf <- randomForest::randomForest(x=trainingdata[, 2:ncol(trainingdata)], y = trainingdata$class)
+
+
+print(ml.model.rf)
+```
+
+```{r}
+source("./src/gibbonID_modified.R")
+
+gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',add.spectrograms=TRUE,min.freq=400,max.freq=1600,class='no.clustering')
+```
+
