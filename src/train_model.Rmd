@@ -24,7 +24,7 @@ for(f in folders){
   filelist_trainingdata <- list.files("./input/trainingdata", full.names = TRUE)
   
   # get filelist
-  filelist <- list.files(f, full.names = TRUE)
+  filelist <- list.files(paste0("./input/", f), full.names = TRUE)
   
   # get max number for new file
   # filter trainingdata filelist
