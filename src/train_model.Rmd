@@ -137,5 +137,7 @@ print(ml.model.rf)
 source("./src/gibbonID_modified.R")
 
 gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',add.spectrograms=TRUE,min.freq=400,max.freq=1600,class='no.clustering')
+
+gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',class='affinity.fixed', q.fixed=0.1,add.spectrograms=TRUE,min.freq=400,max.freq=1600)
 ```
 
