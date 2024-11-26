@@ -25,6 +25,7 @@ for(f in folders){
   
   # get filelist
   filelist <- list.files(paste0("./input/", f), full.names = TRUE)
+  filelist <- filelist[grepl(".wav", filelist)]
   
   # get max number for new file
   # filter trainingdata filelist
