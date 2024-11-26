@@ -221,7 +221,7 @@ gibbonID <-
       }
     }
     ggsave(
-      paste0(output.dir, "/DetectionsAffinityPlot.png"),
+      paste0(output.dir, "/DetectionsAffinityPlot_", class ,".png"),
       my_plot_AcousticSignals,
       width = 4.25,
       height = 3.25,
