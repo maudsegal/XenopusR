@@ -17,7 +17,7 @@ library(randomForest)
 
 ```{r create trainingdata form folders}
 folders <- dir("./input")
-folders <- subset(folders, folders != "trainingdata")
+folders <- subset(folders, !folders %in% c("trainingdata", "onbekend", "testdata"))
 
 for(f in folders){
   # get training data filelist
