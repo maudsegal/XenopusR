@@ -141,3 +141,7 @@ gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='s
 gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',class='affinity.fixed', q.fixed=0.1,add.spectrograms=TRUE,min.freq=400,max.freq=1600)
 ```
 
+```{r save as rda}
+saveRDS(trainingdata, "./output/trained_model.rda")
+```
+
