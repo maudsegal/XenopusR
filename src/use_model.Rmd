@@ -1,0 +1,51 @@
+---
+title: "use_model"
+author: "Sander Devisscher"
+date: "2024-11-29"
+output: html_document
+---
+
+```{r libraries, message=FALSE, warning=FALSE}
+library(gibbonR)
+library(tidyverse)
+```
+
+```{r Load trained model}
+trained_model <- readRDS("./output/trained_model.rda")
+```
+
+```{r set directory}
+# for testing
+TestFileDirectory <- "./input/testdata"
+OutputDirectory <- "./output/testdata"
+
+# for real detections
+# TestFileDirectory <- "./input/onbekend"
+# OutputDirectory <- "./output/onbekend"
+```
+
+```{r}
+gibbonR(input=TestFileDirectory,
+        feature.df=TrainingDataMFCC,
+        model.type.list=c('SVM','RF'),
+        tune = TRUE,
+        short.wav.duration=300,
+        target.signal = c("klauwkikker"),
+        min.freq = 400, max.freq = 1600,
+        noise.quantile.val=0.15,
+        minimum.separation =3,
+        n.windows = 9, num.cep = 12,
+        spectrogram.window =160,
+        pattern.split = ".wav",
+        min.signal.dur = 3,
+        max.sound.event.dur = 25,
+        maximum.separation =1,
+        probability.thresh.svm = 0.15,
+        probability.thresh.rf = 0.15,
+        wav.output = "TRUE",
+        output.dir = OutputDirectory,
+        swift.time=TRUE,time.start=5,time.stop=10,
+        write.table.output=FALSE,verbose=TRUE,
+        random.sample='NA')
+```
+
