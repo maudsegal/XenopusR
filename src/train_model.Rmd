@@ -15,9 +15,18 @@ library(tidyverse)
 library(randomForest)
 ```
 
+```{r get testdata classificationfile}
+classification <- read_delim("input/testdata/classification.txt", 
+    delim = ";", escape_double = FALSE, col_types = cols(filename = col_character(), 
+        classification = col_character()), 
+    trim_ws = TRUE)
+```
+
 ```{r create trainingdata from folders}
 folders <- dir("./input")
 folders <- subset(folders, !folders %in% c("trainingdata", "onbekend", "testdata"))
+
+i <- 1
 
 for(f in folders){
   # get training data filelist
@@ -32,13 +41,28 @@ for(f in folders){
   filelist_trainingdata <- filelist_trainingdata[grep(f, filelist_trainingdata)]
   maxnum <- max(as.numeric(gsub("[^0-9]", "", filelist_trainingdata)))
   
-  # copy files to trainingdata folder
   for(file in filelist){
     maxnum <- maxnum + 1
-    file.copy(file, paste0("./input/trainingdata/", f, "_", maxnum, ".wav"))
-    file.remove(file)
+    i <- i + 1
+    if(i == 3){
+      fname <- gsub(pattern = paste0("./input/", f, "/"), replacement = "", x = file)
+      # copy files to testdata folder
+      file.copy(file, paste0("./input/testdata/", fname))
+      file.remove(file)
+      classification <- classification %>% 
+        add_row(filename = fname, classification = f)
+      # reset i
+      i <- 1
+    } else {
+      # copy files to trainingdata folder
+      file.copy(file, paste0("./input/trainingdata/", f, "_", maxnum, ".wav"))
+      file.remove(file)
+    }
+    
   }
 }
+
+write_csv2(classification, "./input/testdata/classification.txt")
 ```
 
 ```{r fun: WAVtowav}
