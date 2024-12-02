@@ -15,7 +15,7 @@ library(tidyverse)
 library(randomForest)
 ```
 
-```{r create trainingdata form folders}
+```{r create trainingdata from folders}
 folders <- dir("./input")
 folders <- subset(folders, !folders %in% c("trainingdata", "onbekend", "testdata"))
 
