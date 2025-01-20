@@ -95,7 +95,7 @@ results_likely <- results %>%
               names_from = model.type, 
               values_from = probability,
               values_fn = mean) %>% 
-  filter(SVM <= 0.9 & RF > 0.7 | SVM > 0.9)
+  filter(SVM <= 0.9 & RF > 0.7 | SVM > 0.9 | RF > 0.725)
 
 results_unlikely <- results %>% 
   anti_join(results_likely, by = "File Name")
