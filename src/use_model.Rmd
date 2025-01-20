@@ -72,8 +72,8 @@ gibbonR(input=TestFileDirectory,
         min.signal.dur = 1,
         max.sound.event.dur = 25,
         maximum.separation = 1,
-        probability.thresh.svm = 0.6,
-        probability.thresh.rf = 0.6,
+        probability.thresh.svm = 0.15,
+        probability.thresh.rf = 0.15,
         wav.output = "TRUE",
         output.dir = OutputDirectory,
         swift.time = TRUE,
@@ -103,6 +103,7 @@ results_unlikely <- results %>%
 # create likely/unlikely folders
 likely_dir <- file.path(OutputDirectory, "likely")
 unlikely_dir <- file.path(OutputDirectory, "unlikely")
+highly_unlikely_dir <- file.path(OutputDirectory, "highly_unlikely")
 
 if(!dir.exists(likely_dir)){
   dir.create(likely_dir)
@@ -110,6 +111,10 @@ if(!dir.exists(likely_dir)){
 
 if(!dir.exists(unlikely_dir)){
   dir.create(unlikely_dir)
+}
+
+if(!dir.exists(highly_unlikely_dir)){
+  dir.create(highly_unlikely_dir)
 }
 
 # move files to likely/unlikely folders
@@ -176,9 +181,20 @@ for(f in results_unlikely$`File Name`){
     file.remove(e)
   }
 }
+
+# Highly unlikely
+input_files <- list.files(TestFileDirectory, pattern = ".wav", full.names = TRUE)
+
+input_files <- as.data.frame(input_files) %>% 
+  mutate(`File Name` = gsub(pattern = TestFileDirectory, replacement = "", x = input_files),
+         `File Name` = gsub(pattern = "/", replacement = "", x = `File Name`),
+         `File Name` = gsub(pattern = ".wav", replacement = "", x = `File Name`)) %>% 
+  filter(!`File Name` %in% results$`File Name`)
+
+for(e in input_files$`File Name`){
+  file.copy(file.path(TestFileDirectory, paste0(e, ".wav")), file.path(highly_unlikely_dir, paste0(e, ".wav")))
+}
+
 ```
 
-```{r}
-
-```
 
