@@ -4,6 +4,11 @@ author: "Sander Devisscher"
 date: "2024-11-29"
 output: html_document
 ---
+Gebruik steeds dezelfde frequentie range als bij het trainen van het model.
+```{r set frequency range}
+min.freq <- 200
+max.freq <- 3900
+```
 
 ```{r libraries, message=FALSE, warning=FALSE}
 library(gibbonR)
@@ -24,28 +29,145 @@ OutputDirectory <- "./output/testdata"
 # OutputDirectory <- "./output/onbekend"
 ```
 
+Wanneer de output directory nog niet bestaat, maak deze aan.
+```{r create output directory}
+if(!dir.exists(OutputDirectory)){
+  dir.create(OutputDirectory, recursive = TRUE)
+}
+```
+
+Wanneer er nog "resultaten" in de output directory staan, verwijder deze.
+```{r remove old results}
+if(length(list.files(OutputDirectory)) > 0){
+  verwijder <- askYesNo(msg = "Er staan nog resultaten in de output directory. Wil je deze verwijderen?")
+  if(verwijder){
+    file.remove(list.files(OutputDirectory, full.names = TRUE))
+  }
+}
+```
+
 ```{r}
 gibbonR(input=TestFileDirectory,
-        feature.df=trained_model,
-        model.type.list=c('SVM','RF'),
+        input.type = "directory",
+        feature.df = trained_model,
+        model.type.list = c('SVM','RF'),
         tune = TRUE,
-        short.wav.duration=300,
+        short.wav.duration = 300,
         target.signal = c("klauwkikker"),
-        min.freq = 1600, max.freq = 2500,
-        noise.quantile.val=0.15,
-        minimum.separation =3,
+        min.freq = min.freq, max.freq = max.freq,
+        noise.quantile.val = 0.15,
+        minimum.separation = 3,
         n.windows = 9, num.cep = 12,
-        spectrogram.window =160,
+        spectrogram.window = 160,
         pattern.split = ".wav",
-        min.signal.dur = 3,
+        min.signal.dur = 1,
         max.sound.event.dur = 25,
-        maximum.separation =1,
-        probability.thresh.svm = 0.15,
-        probability.thresh.rf = 0.15,
+        maximum.separation = 1,
+        probability.thresh.svm = 0.6,
+        probability.thresh.rf = 0.6,
         wav.output = "TRUE",
         output.dir = OutputDirectory,
-        swift.time=TRUE,time.start=5,time.stop=10,
-        write.table.output=FALSE,verbose=TRUE,
+        swift.time = TRUE,
+        time.start = 0,
+        time.stop = 25,
+        write.table.output=TRUE,
+        verbose=TRUE,
         random.sample='NA')
+```
+
+```{r}
+# read txt files in output directory
+results <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>% 
+  map_dfr(read_tsv)
+
+# filter results
+results_likely <- results %>%
+  pivot_wider(id_cols = `File Name`, 
+              names_from = model.type, 
+              values_from = probability,
+              values_fn = mean) %>% 
+  filter(SVM < 0.8 & RF > 0.7 | SVM > 0.8)
+
+results_unlikely <- results %>% 
+  anti_join(results_likely, by = "File Name")
+
+# create likely/unlikely folders
+likely_dir <- file.path(OutputDirectory, "likely")
+unlikely_dir <- file.path(OutputDirectory, "unlikely")
+
+if(!dir.exists(likely_dir)){
+  dir.create(likely_dir)
+}
+
+if(!dir.exists(unlikely_dir)){
+  dir.create(unlikely_dir)
+}
+
+# move files to likely/unlikely folders
+for(f in results_likely$`File Name`){
+  cat(f, "\n")
+  filelist <- list.files(OutputDirectory, pattern = f, full.names = TRUE) 
+  
+  file <- subset(filelist, grepl(".wav", filelist))
+  
+  test <- as.data.frame(file) %>% 
+    mutate(export_filename = gsub(pattern = "_SVM", replacement = "", x = file),
+           export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
+           export_filename = substr(export_filename, 0, nchar(export_filename)-9),
+           export_filename = gsub("_+$", "", export_filename),
+           export_filename = paste0(export_filename, ".wav")) %>% 
+    group_by(export_filename) %>% 
+    summarise(file = first(file))
+  
+  # Copy the first file to the likely directory
+  for(e in test$file){
+    export_filename <- test$export_filename[which(test$file == e)]
+    
+    file <- subset(file, grepl(e, file))
+    
+    file.copy(e, file.path(likely_dir, export_filename))
+    file.remove(e)
+  }
+  # Remove the other likely files
+  for(e in file){
+    file.remove(e)
+  }
+}
+
+
+
+for(f in results_unlikely$`File Name`){
+  cat(f, "\n")
+  filelist <- list.files(OutputDirectory, pattern = f, full.names = TRUE) 
+  
+  file <- subset(filelist, grepl(".wav", filelist))
+  
+  test <- as.data.frame(file) %>% 
+    mutate(export_filename = gsub(pattern = "_SVM", replacement = "", x = file),
+           export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
+           export_filename = substr(export_filename, 0, nchar(export_filename)-9),
+           export_filename = gsub("_+$", "", export_filename),
+           export_filename = paste0(export_filename, ".wav")) %>% 
+    group_by(export_filename) %>% 
+    summarise(file = first(file))
+  
+  # Copy the first file to the likely directory
+  for(e in test$file){
+    export_filename <- test$export_filename[which(test$file == e)]
+    
+    file <- subset(file, grepl(e, file))
+    
+    file.copy(e, file.path(unlikely_dir, export_filename))
+    file.remove(e)
+  }
+  # Remove the other likely files
+  for(e in file){
+    file.remove(e)
+  }
+}
+```
+
+```{r}
+
 ```
 
