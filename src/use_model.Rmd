@@ -20,13 +20,22 @@ trained_model <- readRDS("./output/trained_model.rda")
 ```
 
 ```{r set directory}
-# for testing
-TestFileDirectory <- "./input/testdata"
-OutputDirectory <- "./output/testdata"
+testing <- menu(choices = c("test", "real"), 
+                title = "Kies een optie", 
+                graphics = TRUE)
 
-# for real detections
-# TestFileDirectory <- "./input/onbekend"
-# OutputDirectory <- "./output/onbekend"
+# for testing
+if(testing == 1){
+  TestFileDirectory <- "./input/testdata"
+  OutputDirectory <- "./output/testdata"
+} else {
+  if(testing == 2){
+    TestFileDirectory <- "./input/onbekend"
+    OutputDirectory <- "./output/onbekend"
+  }else{
+    stop("run gecancelled")
+  }
+}
 ```
 
 Wanneer de output directory nog niet bestaat, maak deze aan.
@@ -41,7 +50,7 @@ Wanneer er nog "resultaten" in de output directory staan, verwijder deze.
 if(length(list.files(OutputDirectory)) > 0){
   verwijder <- askYesNo(msg = "Er staan nog resultaten in de output directory. Wil je deze verwijderen?")
   if(verwijder){
-    file.remove(list.files(OutputDirectory, full.names = TRUE))
+    file.remove(list.files(OutputDirectory, full.names = TRUE, recursive = TRUE))
   }
 }
 ```
@@ -86,7 +95,7 @@ results_likely <- results %>%
               names_from = model.type, 
               values_from = probability,
               values_fn = mean) %>% 
-  filter(SVM < 0.8 & RF > 0.7 | SVM > 0.8)
+  filter(SVM <= 0.9 & RF > 0.7 | SVM > 0.9)
 
 results_unlikely <- results %>% 
   anti_join(results_likely, by = "File Name")
@@ -115,7 +124,8 @@ for(f in results_likely$`File Name`){
            export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
            export_filename = substr(export_filename, 0, nchar(export_filename)-9),
            export_filename = gsub("_+$", "", export_filename),
-           export_filename = paste0(export_filename, ".wav")) %>% 
+           export_filename = paste0(export_filename, ".wav"),
+           export_filename = gsub(pattern = OutputDirectory, replacement = "", x = export_filename)) %>% 
     group_by(export_filename) %>% 
     summarise(file = first(file))
   
@@ -123,7 +133,7 @@ for(f in results_likely$`File Name`){
   for(e in test$file){
     export_filename <- test$export_filename[which(test$file == e)]
     
-    file <- subset(file, grepl(e, file))
+    file <- subset(file, !grepl(e, file))
     
     file.copy(e, file.path(likely_dir, export_filename))
     file.remove(e)
@@ -147,7 +157,8 @@ for(f in results_unlikely$`File Name`){
            export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
            export_filename = substr(export_filename, 0, nchar(export_filename)-9),
            export_filename = gsub("_+$", "", export_filename),
-           export_filename = paste0(export_filename, ".wav")) %>% 
+           export_filename = paste0(export_filename, ".wav"),
+           export_filename = gsub(pattern = OutputDirectory, replacement = "", x = export_filename)) %>% 
     group_by(export_filename) %>% 
     summarise(file = first(file))
   
@@ -155,7 +166,7 @@ for(f in results_unlikely$`File Name`){
   for(e in test$file){
     export_filename <- test$export_filename[which(test$file == e)]
     
-    file <- subset(file, grepl(e, file))
+    file <- subset(file, !grepl(e, file))
     
     file.copy(e, file.path(unlikely_dir, export_filename))
     file.remove(e)
