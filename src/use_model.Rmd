@@ -26,7 +26,7 @@ OutputDirectory <- "./output/testdata"
 
 ```{r}
 gibbonR(input=TestFileDirectory,
-        feature.df=TrainingDataMFCC,
+        feature.df=trained_model,
         model.type.list=c('SVM','RF'),
         tune = TRUE,
         short.wav.duration=300,
