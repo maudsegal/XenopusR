@@ -5,6 +5,11 @@ date: "2024-11-20"
 output: html_document
 ---
 
+```{r set frequency range}
+min.freq <- 200
+max.freq <- 3900
+```
+
 ```{r install gibonR, eval = FALSE}
 devtools::install_github("DenaJGibbon/gibbonR")
 ```
@@ -81,7 +86,7 @@ test <- readWave(paste(TrainingWavFilesDir, "klauwkikker_1.wav", sep = ""))
 ```
 
 ```{r Read in clips and calculate MFCCs}
-trainingdata <- gibbonR::MFCCFunction(input.dir=TrainingWavFilesDir, min.freq = 400, max.freq = 1600,win.avg="standard")
+trainingdata <- gibbonR::MFCCFunction(input.dir=TrainingWavFilesDir, min.freq = min.freq, max.freq = max.freq,win.avg="standard")
 
 # Convert to a factor
 trainingdata$class <- as.factor(trainingdata$class)
@@ -114,9 +119,9 @@ print(ml.model.rf)
 ```{r}
 source("./src/gibbonID_modified.R")
 
-gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',add.spectrograms=TRUE,min.freq=400,max.freq=1600,class='no.clustering')
+gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',add.spectrograms=TRUE,min.freq=min.freq,max.freq=max.freq,class='no.clustering')
 
-gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',class='affinity.fixed', q.fixed=0.1,add.spectrograms=TRUE,min.freq=400,max.freq=1600)
+gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',class='affinity.fixed', q.fixed=0.1,add.spectrograms=TRUE,min.freq=min.freq,max.freq=max.freq)
 ```
 
 ```{r save as rda}
