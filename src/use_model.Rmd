@@ -160,10 +160,12 @@ for(f in results_likely$`File Name`){
   test <- as.data.frame(file) %>% 
     mutate(export_filename = gsub(pattern = "_SVM", replacement = "", x = file),
            export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
-           export_filename = substr(export_filename, 0, nchar(export_filename)-9),
+           export_filename = gsub(pattern = "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)", replacement = "", 
+                                  x = export_filename, perl = TRUE),
+           export_filename = gsub(".wav", "", export_filename),
            export_filename = gsub("_+$", "", export_filename),
            export_filename = paste0(export_filename, ".wav"),
-           export_filename = gsub(pattern = OutputDirectory, replacement = "", x = export_filename)) %>% 
+           export_filename = gsub(pattern = paste0(OutputDirectory, "/"), replacement = "", x = export_filename)) %>% 
     group_by(export_filename) %>% 
     summarise(file = first(file))
   
@@ -192,10 +194,12 @@ for(f in results_unlikely$`File Name`){
   test <- as.data.frame(file) %>% 
     mutate(export_filename = gsub(pattern = "_SVM", replacement = "", x = file),
            export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
-           export_filename = substr(export_filename, 0, nchar(export_filename)-9),
+           export_filename = gsub(pattern = "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)", replacement = "", 
+                                  x = export_filename, perl = TRUE),
+           export_filename = gsub(".wav", "", export_filename),
            export_filename = gsub("_+$", "", export_filename),
            export_filename = paste0(export_filename, ".wav"),
-           export_filename = gsub(pattern = OutputDirectory, replacement = "", x = export_filename)) %>% 
+           export_filename = gsub(pattern = paste0(OutputDirectory, "/"), replacement = "", x = export_filename)) %>% 
     group_by(export_filename) %>% 
     summarise(file = first(file))
   
