@@ -16,7 +16,7 @@ WAVtowav <- function(input_dir,
   }
   
   # Get a list of all the .WAV files in the input directory
-  list.of.wav.files <- list.files(input_dir, pattern = ".WAV", full.names = T)
+  list.of.wav.files <- list.files(input_dir, pattern = ".WAV", recursive = TRUE)
   
   # Create a list to store the .wav files that are created
   list.of.wav.files.created <- list()
@@ -29,18 +29,30 @@ WAVtowav <- function(input_dir,
     for(x in 1:length(list.of.wav.files)){
       # Get the name of the .WAV file
       temp.wav.file <- list.of.wav.files[x]
+      temp.wav.file <- paste(input_dir, temp.wav.file, sep = "/")
       
       # Get the name of the .wav file
       temp.wav.file.new <- gsub(".WAV", ".wav", temp.wav.file)
       
-      # Create the new .wav file
-      file.copy(temp.wav.file, paste(output_dir, temp.wav.file.new, sep = "/"))
+      # Check if the .wav file already exists
+      if(file.exists(temp.wav.file.new)){
+        # if file exists copy it to a temporary file
+        temp.file <- tempfile()
+        
+        file.copy(from = temp.wav.file.new, 
+                  to = temp.file)
+        file.remove(temp.wav.file.new)
+        file.copy(from = temp.file, 
+                  to = temp.wav.file.new)
+      }else{
+        # if file does not exist, copy it to the new file
+        file.copy(from = temp.wav.file, 
+                  to = temp.wav.file.new)
+      }
       
       # Add the new .wav file to the list
-      list.of.wav.files.created[[x]] <- paste(output_dir, temp.wav.file.new, sep = "/")
-    }
-  }
-  
+      list.of.wav.files.created[[x]] <- temp.wav.file.new
+    }}
   # Return the list of .wav files that were created
   return(list.of.wav.files.created)
 }
