@@ -13,6 +13,7 @@ max.freq <- 3900
 ```{r libraries, message=FALSE, warning=FALSE}
 library(gibbonR)
 library(tidyverse)
+library(progress)
 ```
 
 ```{r Load trained model}
@@ -100,8 +101,14 @@ gibbonR(input = TestFileDirectory,
 
 ```{r}
 # read txt files in output directory
-results <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>% 
-  map_dfr(read_tsv)
+results <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
+  {
+    pb <- progress_bar$new(total = length(.), format = "[:bar] :percent :eta", force = TRUE)
+    map_dfr(., function(file) {
+      pb$tick()
+      read_tsv(file, show_col_types = FALSE)
+    })
+  }
 
 # filter results
 results_likely <- results %>%
