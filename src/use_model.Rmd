@@ -69,14 +69,15 @@ if(length(list.files(OutputDirectory)) > 0){
 ```
 
 ```{r}
-gibbonR(input=TestFileDirectory,
+gibbonR(input = TestFileDirectory,
         input.type = "directory",
         feature.df = trained_model,
         model.type.list = c('SVM','RF'),
         tune = TRUE,
         short.wav.duration = 300,
         target.signal = c("klauwkikker"),
-        min.freq = min.freq, max.freq = max.freq,
+        min.freq = min.freq, 
+        max.freq = max.freq,
         noise.quantile.val = 0.15,
         minimum.separation = 3,
         n.windows = 9, num.cep = 12,
