@@ -26,7 +26,13 @@ WAVtowav <- function(input_dir,
   if(length(list.of.wav.files) == 0){
     cat("No .WAV files found in the input directory")
   }else{
+    # initiate progress bar
+    pb <- utils::txtProgressBar(min = 0, max = length(list.of.wav.files), style = 3)
+    
     for(x in 1:length(list.of.wav.files)){
+      # update progress bar
+      utils::setTxtProgressBar(pb, x)
+      
       # Get the name of the .WAV file
       temp.wav.file <- list.of.wav.files[x]
       temp.wav.file <- paste(input_dir, temp.wav.file, sep = "/")
