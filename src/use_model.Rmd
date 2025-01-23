@@ -48,8 +48,7 @@ Wanneer er .WAV files in de input directory staan, converteer deze naar .wav fil
 ```{r convert .WAV to .wav}
 source("./src/WAVtowav.R")
 
-WAVtowav(input_dir = TestFileDirectory, 
-          output_dir = TestFileDirectory)
+WAVtowav(input_dir = TestFileDirectory)
 ```
 
 Wanneer de output directory nog niet bestaat, maak deze aan.
