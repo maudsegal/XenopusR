@@ -46,6 +46,8 @@ if(testing == 1){
 
 Wanneer er .WAV files in de input directory staan, converteer deze naar .wav files.
 ```{r convert .WAV to .wav}
+source("./src/WAVtowav.R")
+
 WAVtowav(input_dir = TestFileDirectory, 
           output_dir = TestFileDirectory)
 ```
