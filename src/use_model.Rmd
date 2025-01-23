@@ -103,9 +103,11 @@ gibbonR(input = TestFileDirectory,
 # read txt files in output directory
 results_long <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
   {
-    pb <- progress_bar$new(total = length(.), format = "[:bar] :percent :eta", force = TRUE)
+    pb <- progress_bar$new(total = 100, format = "[:bar] :percent :eta", force = TRUE)
     map_dfr(., function(file) {
-      pb$tick()
+      if (which(. == file) %% max(1, round(length(.) / 100)) == 0) {
+        pb$tick()
+      }
       read_tsv(file, show_col_types = FALSE)
     })
   }
@@ -120,7 +122,7 @@ results <- results_long %>%
     RF > 0.725 ~ "likely",
     TRUE ~ "unlikely"
   )) %>% 
-  write_csv(file = file.path(OutputDirectory, "results.csv"))
+  write_csv2(file = file.path(OutputDirectory, "results.csv"))
 
 table(results$result, useNA = "ifany")
 
