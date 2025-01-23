@@ -30,8 +30,14 @@ if(testing == 1){
   OutputDirectory <- "./output/testdata"
 } else {
   if(testing == 2){
-    TestFileDirectory <- "./input/onbekend"
-    OutputDirectory <- "./output/onbekend"
+    # display popup to select input directory
+    input_dir <- svDialogs::dlg_dir(default = "./input/", 
+                                    caption = "Selecteer de input directory")
+    
+    TestFileDirectory <- input_dir$res
+    OutputDirectory <- gsub(pattern = "input", 
+                            replacement = "output", 
+                            x = TestFileDirectory)
   }else{
     stop("run gecancelled")
   }
@@ -148,7 +154,6 @@ for(f in results_likely$`File Name`){
     file.remove(e)
   }
 }
-
 
 
 for(f in results_unlikely$`File Name`){
