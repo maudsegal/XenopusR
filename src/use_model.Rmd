@@ -101,7 +101,7 @@ gibbonR(input = TestFileDirectory,
 
 ```{r}
 # read txt files in output directory
-results <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
+results_long <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
   {
     pb <- progress_bar$new(total = length(.), format = "[:bar] :percent :eta", force = TRUE)
     map_dfr(., function(file) {
@@ -110,12 +110,23 @@ results <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
     })
   }
 
-# filter results
-results_likely <- results %>%
-  pivot_wider(id_cols = c(`Begin Time (s)`, `End Time (s)`, `File Name`), 
+results <- results_long %>% 
+  pivot_wider(id_cols = c(`File Name`, `Begin Time (s)`, `End Time (s)`), 
               names_from = model.type, 
               values_from = probability) %>% 
-  filter(SVM <= 0.9 & RF > 0.7 | SVM > 0.9 | RF > 0.725)
+  mutate(result = case_when(
+    SVM <= 0.9 & RF > 0.7 ~ "likely",
+    SVM > 0.9 ~ "likely",
+    RF > 0.725 ~ "likely",
+    TRUE ~ "unlikely"
+  )) %>% 
+  write_csv(file = file.path(OutputDirectory, "results.csv"))
+
+table(results$result, useNA = "ifany")
+
+# filter results
+results_likely <- results %>% 
+  filter(result == "likely")
 
 results_unlikely <- results %>% 
   anti_join(results_likely, by = "File Name")
