@@ -105,10 +105,9 @@ results <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
 
 # filter results
 results_likely <- results %>%
-  pivot_wider(id_cols = `File Name`, 
+  pivot_wider(id_cols = c(`Begin Time (s)`, `End Time (s)`, `File Name`), 
               names_from = model.type, 
-              values_from = probability,
-              values_fn = mean) %>% 
+              values_from = probability) %>% 
   filter(SVM <= 0.9 & RF > 0.7 | SVM > 0.9 | RF > 0.725)
 
 results_unlikely <- results %>% 
@@ -207,7 +206,6 @@ input_files <- as.data.frame(input_files) %>%
 for(e in input_files$`File Name`){
   file.copy(file.path(TestFileDirectory, paste0(e, ".wav")), file.path(highly_unlikely_dir, paste0(e, ".wav")))
 }
-
 ```
 
 
