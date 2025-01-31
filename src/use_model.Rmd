@@ -223,11 +223,29 @@ for(f in results_likely$export_filename){
              confidence = str_extract(confidence, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)")) %>% 
       mutate(filename = gsub(pattern = "_SVM", replacement = "", x = filename2),
              filename = gsub(pattern = "_RF", replacement = "", x = filename)) %>% 
-      filter((begintime >= begintime_file & endtime <= endtime_file)) %>% 
       select(`File Name` = filename, `Begin Time (s)` = begintime, `End Time (s)` = endtime, modeltype, confidence, file) %>% 
       pivot_wider(id_cols = c(`File Name`, `Begin Time (s)`, `End Time (s)`), 
                   names_from = modeltype, 
-                  values_from = c(confidence, file)) %>% 
+                  values_from = c(confidence, file)) 
+    
+    # add confidence_SVM, confidence_RF, file_SVM, file_RF to test2 if missing
+    if(!"confidence_SVM" %in% colnames(test2)){
+      test2$confidence_SVM <- NA
+    }
+    
+    if(!"confidence_RF" %in% colnames(test2)){
+      test2$confidence_RF <- NA
+    }
+    
+    if(!"file_SVM" %in% colnames(test2)){
+      test2$file_SVM <- NA
+    }
+    
+    if(!"file_RF" %in% colnames(test2)){
+      test2$file_RF <- NA
+    }
+    
+    test2 <- test2 %>% 
       rename(SVM = confidence_SVM, RF = confidence_RF) %>%
       mutate(result = case_when(
         SVM <= 0.9 & RF > 0.7 ~ "likely",
@@ -240,6 +258,25 @@ for(f in results_likely$export_filename){
       mutate(wavfiles = paste(unique(file_RF), unique(file_SVM))) %>% 
       mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
       mutate(remarks = paste0("Overlapped by: ", f))
+    
+    test2 <- test2 %>% 
+      filter(`Begin Time (s)` >= begintime_file & `End Time (s)` <= endtime_file)
+    
+    if(nrow(test2) == 0){
+      results <- results %>% 
+      mutate(remarks = case_when(
+        export_filename == f ~ "No file found & No overlap found",
+        TRUE ~ remarks
+      )) %>% 
+      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    }else{
+      results <- results %>% 
+      mutate(remarks = case_when(
+        export_filename == f ~ "No file found >> overlap found",
+        TRUE ~ remarks
+      )) %>% 
+      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    }
     
     # Add files to results
     if(nrow(test2) > 0){
@@ -356,11 +393,29 @@ for(f in results_unlikely$export_filename){
              confidence = str_extract(confidence, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)")) %>% 
       mutate(filename = gsub(pattern = "_SVM", replacement = "", x = filename2),
              filename = gsub(pattern = "_RF", replacement = "", x = filename)) %>% 
-      filter((begintime >= begintime_file & endtime <= endtime_file)) %>% 
       select(`File Name` = filename, `Begin Time (s)` = begintime, `End Time (s)` = endtime, modeltype, confidence, file) %>% 
       pivot_wider(id_cols = c(`File Name`, `Begin Time (s)`, `End Time (s)`), 
                   names_from = modeltype, 
-                  values_from = c(confidence, file)) %>% 
+                  values_from = c(confidence, file)) 
+    
+    # add confidence_SVM, confidence_RF, file_SVM, file_RF to test2 if missing
+    if(!"confidence_SVM" %in% colnames(test2)){
+      test2$confidence_SVM <- NA
+    }
+    
+    if(!"confidence_RF" %in% colnames(test2)){
+      test2$confidence_RF <- NA
+    }
+    
+    if(!"file_SVM" %in% colnames(test2)){
+      test2$file_SVM <- NA
+    }
+    
+    if(!"file_RF" %in% colnames(test2)){
+      test2$file_RF <- NA
+    }
+    
+    test2 <- test2 %>% 
       rename(SVM = confidence_SVM, RF = confidence_RF) %>%
       mutate(result = case_when(
         SVM <= 0.9 & RF > 0.7 ~ "likely",
@@ -373,6 +428,25 @@ for(f in results_unlikely$export_filename){
       mutate(wavfiles = paste(unique(file_RF), unique(file_SVM))) %>% 
       mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
       mutate(remarks = paste0("Overlapped by: ", f))
+    
+    test2 <- test2 %>% 
+      filter(`Begin Time (s)` >= begintime_file & `End Time (s)` <= endtime_file)
+    
+    if(nrow(test2) == 0){
+      results <- results %>% 
+      mutate(remarks = case_when(
+        export_filename == f ~ "No file found & No overlap found",
+        TRUE ~ remarks
+      )) %>% 
+      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    }else{
+      results <- results %>% 
+      mutate(remarks = case_when(
+        export_filename == f ~ "No file found >> overlap found",
+        TRUE ~ remarks
+      )) %>% 
+      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    }
     
     # Add files to results
     if(nrow(test2) > 0){
