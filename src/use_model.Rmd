@@ -255,7 +255,7 @@ for(f in results_likely$export_filename){
       )) %>%
       mutate(SVM = as.numeric(SVM),
              RF = as.numeric(RF)) %>%
-      mutate(wavfiles = paste(unique(file_RF), unique(file_SVM))) %>% 
+      mutate(wavfiles = paste(file_RF, file_SVM)) %>% 
       mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
       mutate(remarks = paste0("Overlapped by: ", f))
     
@@ -425,7 +425,7 @@ for(f in results_unlikely$export_filename){
       )) %>%
       mutate(SVM = as.numeric(SVM),
              RF = as.numeric(RF)) %>%
-      mutate(wavfiles = paste(unique(file_RF), unique(file_SVM))) %>% 
+      mutate(wavfiles = paste(file_RF, file_SVM)) %>% 
       mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
       mutate(remarks = paste0("Overlapped by: ", f))
     
