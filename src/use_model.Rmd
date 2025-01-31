@@ -195,8 +195,56 @@ for(f in results_likely$export_filename){
     # That are not in the results
     # If so, add these files to results
     
-    file.copy(e, file.path(likely_dir, export_filename))
-    file.remove(e)
+    # extract begin & end time from file in results
+    endtime_file <- as.numeric(str_extract(f, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)"))
+    begintime_file <- gsub(pattern = paste0("_", endtime_file), replacement = "", x = f)
+    begintime_file <- as.numeric(str_extract(begintime_file, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)"))
+    
+    # extract begin & end time from files in the directory
+    test2 <- as.data.frame(wavfiles) %>% 
+      mutate(filename = gsub(pattern = OutputDirectory, replacement = "", x = wavfiles),
+             filename = gsub(pattern = "/", replacement = "", x = filename),
+             filename = gsub(pattern = "_klauwkikker", replacement = "", x = filename),
+             filename = gsub(pattern = "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)", replacement = "", 
+                             x = filename, perl = TRUE),
+             filename = gsub(pattern = "_.wav", replacement = "", x = filename)) %>% 
+      mutate(endtime = str_extract(filename, "[^_]+$"),
+             filename2 = str_remove(filename, paste0("_", endtime, "$")),
+             begintime = str_extract(filename2, "[^_]+$"),
+             filename2 = str_remove(filename2, paste0("_", begintime, "$")),
+             begintime = as.numeric(begintime),
+             endtime = as.numeric(endtime)) %>% 
+      mutate(modeltype = case_when(
+        grepl("_SVM", filename2) ~ "SVM",
+        grepl("_RF", filename2) ~ "RF",
+        TRUE ~ NA_character_
+      )) %>%
+      mutate(confidence = gsub(pattern = OutputDirectory, replacement = "", x = wavfiles),
+             confidence = str_extract(confidence, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)")) %>% 
+      mutate(filename = gsub(pattern = "_SVM", replacement = "", x = filename2),
+             filename = gsub(pattern = "_RF", replacement = "", x = filename)) %>% 
+      filter((begintime >= begintime_file & endtime <= endtime_file)) %>% 
+      select(`File Name` = filename, `Begin Time (s)` = begintime, `End Time (s)` = endtime, modeltype, confidence) %>% 
+      pivot_wider(id_cols = c(`File Name`, `Begin Time (s)`, `End Time (s)`), 
+                  names_from = modeltype, 
+                  values_from = confidence) %>% 
+      mutate(result = case_when(
+        SVM <= 0.9 & RF > 0.7 ~ "likely",
+        SVM > 0.9 ~ "likely",
+        RF > 0.725 ~ "likely",
+        TRUE ~ "unlikely"
+      )) %>%
+      mutate(SVM = as.numeric(SVM),
+             RF = as.numeric(RF)) %>%
+      mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
+      mutate(remarks = paste0("Overlapped by: ", f))
+    
+    # Add files to results
+    if(nrow(test2) > 0){
+      results <- results %>% 
+        bind_rows(test2) %>% 
+        write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    }
   }
   
   if(nrow(test) == 1){
@@ -245,6 +293,61 @@ for(f in results_unlikely$export_filename){
         TRUE ~ remarks
       )) %>% 
       write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    
+    # Is there some overlap with other files in the directory?
+    # That are not in the results
+    # If so, add these files to results
+    
+    # extract begin & end time from file in results
+    endtime_file <- as.numeric(str_extract(f, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)"))
+    begintime_file <- gsub(pattern = paste0("_", endtime_file), replacement = "", x = f)
+    begintime_file <- as.numeric(str_extract(begintime_file, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)"))
+    
+    # extract begin & end time from files in the directory
+    test2 <- as.data.frame(wavfiles) %>% 
+      mutate(filename = gsub(pattern = OutputDirectory, replacement = "", x = wavfiles),
+             filename = gsub(pattern = "/", replacement = "", x = filename),
+             filename = gsub(pattern = "_klauwkikker", replacement = "", x = filename),
+             filename = gsub(pattern = "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)", replacement = "", 
+                             x = filename, perl = TRUE),
+             filename = gsub(pattern = "_.wav", replacement = "", x = filename)) %>% 
+      mutate(endtime = str_extract(filename, "[^_]+$"),
+             filename2 = str_remove(filename, paste0("_", endtime, "$")),
+             begintime = str_extract(filename2, "[^_]+$"),
+             filename2 = str_remove(filename2, paste0("_", begintime, "$")),
+             begintime = as.numeric(begintime),
+             endtime = as.numeric(endtime)) %>% 
+      mutate(modeltype = case_when(
+        grepl("_SVM", filename2) ~ "SVM",
+        grepl("_RF", filename2) ~ "RF",
+        TRUE ~ NA_character_
+      )) %>%
+      mutate(confidence = gsub(pattern = OutputDirectory, replacement = "", x = wavfiles),
+             confidence = str_extract(confidence, "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)")) %>% 
+      mutate(filename = gsub(pattern = "_SVM", replacement = "", x = filename2),
+             filename = gsub(pattern = "_RF", replacement = "", x = filename)) %>% 
+      filter((begintime >= begintime_file & endtime <= endtime_file)) %>% 
+      select(`File Name` = filename, `Begin Time (s)` = begintime, `End Time (s)` = endtime, modeltype, confidence) %>% 
+      pivot_wider(id_cols = c(`File Name`, `Begin Time (s)`, `End Time (s)`), 
+                  names_from = modeltype, 
+                  values_from = confidence) %>% 
+      mutate(result = case_when(
+        SVM <= 0.9 & RF > 0.7 ~ "likely",
+        SVM > 0.9 ~ "likely",
+        RF > 0.725 ~ "likely",
+        TRUE ~ "unlikely"
+      )) %>%
+      mutate(SVM = as.numeric(SVM),
+             RF = as.numeric(RF)) %>%
+      mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
+      mutate(remarks = paste0("Overlapped by: ", f))
+    
+    # Add files to results
+    if(nrow(test2) > 0){
+      results <- results %>% 
+        bind_rows(test2) %>% 
+        write_csv2(file = file.path(OutputDirectory, "results.csv"))
+    }
   }
   
   if(nrow(test) == 1){
