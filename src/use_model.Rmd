@@ -237,7 +237,7 @@ for(f in results_likely$export_filename){
       )) %>%
       mutate(SVM = as.numeric(SVM),
              RF = as.numeric(RF)) %>%
-      mutate(wavfiles = paste(unique(file_RF), unique(file_SVM), sep = ", ")) %>% 
+      mutate(wavfiles = paste(unique(file_RF), unique(file_SVM))) %>% 
       mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
       mutate(remarks = paste0("Overlapped by: ", f))
     
@@ -252,16 +252,26 @@ for(f in results_likely$export_filename){
         filter(result == "likely")
       
       for(e in test2_likely$export_filename){
-        file.copy(test2_likely$wavfiles[1], file.path(likely_dir, test2_likely$export_filename[1]))
-        file.remove(test2_likely$wavfiles)
+        e_subset <- test2_likely %>% 
+          filter(export_filename == e)
+        
+        e_wavfiles <- str_split(e_subset$wavfiles, " ")[[1]]
+        
+        file.copy(e_wavfiles[1], file.path(likely_dir, e))
+        file.remove(e_wavfiles)
       }
       
       test2_unlikely <- test2 %>%
         filter(result == "unlikely")
       
       for(e in test2_unlikely$export_filename){
-        file.copy(test2_unlikely$wavfiles[1], file.path(unlikely_dir, test2_unlikely$export_filename[1]))
-        file.remove(test2_unlikely$wavfiles)
+        e_subset <- test2_unlikely %>% 
+          filter(export_filename == e)
+        
+        e_wavfiles <- str_split(e_subset$wavfiles, " ")[[1]]
+        
+        file.copy(e_wavfiles[1], file.path(unlikely_dir, e))
+        file.remove(e_wavfiles)
       }
     }
   }
@@ -360,7 +370,7 @@ for(f in results_unlikely$export_filename){
       )) %>%
       mutate(SVM = as.numeric(SVM),
              RF = as.numeric(RF)) %>%
-      mutate(wavfiles = paste(unique(file_RF), unique(file_SVM), sep = ", ")) %>% 
+      mutate(wavfiles = paste(unique(file_RF), unique(file_SVM))) %>% 
       mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>%
       mutate(remarks = paste0("Overlapped by: ", f))
     
@@ -375,16 +385,26 @@ for(f in results_unlikely$export_filename){
         filter(result == "likely")
       
       for(e in test2_likely$export_filename){
-        file.copy(test2_likely$wavfiles[1], file.path(likely_dir, test2_likely$export_filename[1]))
-        file.remove(test2_likely$wavfiles)
+        e_subset <- test2_likely %>% 
+          filter(export_filename == e)
+        
+        e_wavfiles <- str_split(e_subset$wavfiles, " ")[[1]]
+        
+        file.copy(e_wavfiles[1], file.path(likely_dir, e))
+        file.remove(e_wavfiles)
       }
       
       test2_unlikely <- test2 %>%
         filter(result == "unlikely")
       
       for(e in test2_unlikely$export_filename){
-        file.copy(test2_unlikely$wavfiles[1], file.path(unlikely_dir, test2_unlikely$export_filename[1]))
-        file.remove(test2_unlikely$wavfiles)
+        e_subset <- test2_unlikely %>% 
+          filter(export_filename == e)
+        
+        e_wavfiles <- str_split(e_subset$wavfiles, " ")[[1]]
+        
+        file.copy(e_wavfiles[1], file.path(unlikely_dir, e))
+        file.remove(e_wavfiles)
       }
     }
   }
