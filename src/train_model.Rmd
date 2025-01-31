@@ -22,9 +22,9 @@ library(randomForest)
 
 ```{r get testdata classificationfile}
 classification <- read_delim("input/testdata/classification.txt", 
-    delim = ";", escape_double = FALSE, col_types = cols(filename = col_character(), 
-        classification = col_character()), 
-    trim_ws = TRUE)
+                             delim = ";", escape_double = FALSE, col_types = cols(filename = col_character(), 
+                                                                                  classification = col_character()), 
+                             trim_ws = TRUE)
 ```
 
 ```{r create trainingdata from folders}
@@ -49,21 +49,30 @@ for(f in folders){
   for(file in filelist){
     maxnum <- maxnum + 1
     i <- i + 1
-    if(i == 3){
-      fname <- gsub(pattern = paste0("./input/", f, "/"), replacement = "", x = file)
-      # copy files to testdata folder
-      file.copy(file, paste0("./input/testdata/", fname))
-      file.remove(file)
-      classification <- classification %>% 
-        add_row(filename = fname, classification = f)
-      # reset i
-      i <- 1
+    
+    gentestdata <- askYesNo("generate testdata?", default = "no")
+    
+    if(gentestdata){
+      
+      if(i == 3){
+        fname <- gsub(pattern = paste0("./input/", f, "/"), replacement = "", x = file)
+        # copy files to testdata folder
+        file.copy(file, paste0("./input/testdata/", fname))
+        file.remove(file)
+        classification <- classification %>% 
+          add_row(filename = fname, classification = f)
+        # reset i
+        i <- 1
+      } else {
+        # copy files to trainingdata folder
+        file.copy(file, paste0("./input/trainingdata/", f, "_", maxnum, ".wav"))
+        file.remove(file)
+      }
     } else {
-      # copy files to trainingdata folder
+      # copy all files to trainingdata folder
       file.copy(file, paste0("./input/trainingdata/", f, "_", maxnum, ".wav"))
       file.remove(file)
     }
-    
   }
 }
 
