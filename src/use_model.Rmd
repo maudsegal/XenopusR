@@ -99,7 +99,7 @@ gibbonR(input = TestFileDirectory,
         random.sample='NA')
 ```
 
-```{r}
+```{r read result files}
 # read txt files in output directory
 results_long <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
   {
@@ -111,7 +111,9 @@ results_long <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE)
       read_tsv(file, show_col_types = FALSE)
     })
   }
+```
 
+```{r process results}  
 results <- results_long %>% 
   pivot_wider(id_cols = c(`File Name`, `Begin Time (s)`, `End Time (s)`), 
               names_from = model.type, 
@@ -122,6 +124,8 @@ results <- results_long %>%
     RF > 0.725 ~ "likely",
     TRUE ~ "unlikely"
   )) %>% 
+  mutate(export_filename = paste0(`File Name`, "_klauwkikker_", `Begin Time (s)`, "_", `End Time (s)`, ".wav")) %>% 
+  mutate(remarks = NA_character_) %>% 
   write_csv2(file = file.path(OutputDirectory, "results.csv"))
 
 table(results$result, useNA = "ifany")
@@ -131,7 +135,7 @@ results_likely <- results %>%
   filter(result == "likely")
 
 results_unlikely <- results %>% 
-  anti_join(results_likely, by = "File Name")
+  filter(result == "unlikely")
 
 # create likely/unlikely folders
 likely_dir <- file.path(OutputDirectory, "likely")
@@ -149,15 +153,22 @@ if(!dir.exists(unlikely_dir)){
 if(!dir.exists(highly_unlikely_dir)){
   dir.create(highly_unlikely_dir)
 }
+```
 
+```{r move files}
 # move files to likely/unlikely folders
-for(f in results_likely$`File Name`){
+for(f in results_likely$export_filename){
   cat(f, "\n")
-  filelist <- list.files(OutputDirectory, pattern = f, full.names = TRUE) 
   
-  file <- subset(filelist, grepl(".wav", filelist))
+  file_results <- results_likely %>% 
+    filter(export_filename == f)
   
-  test <- as.data.frame(file) %>% 
+  filelist <- list.files(OutputDirectory, pattern = file_results$`File Name`, full.names = TRUE) 
+  
+  wavfiles <- subset(filelist, grepl(".wav", filelist))
+  
+  test <- as.data.frame(wavfiles) %>% 
+    rename(file = wavfiles) %>%
     mutate(export_filename = gsub(pattern = "_SVM", replacement = "", x = file),
            export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
            export_filename = gsub(pattern = "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)", replacement = "", 
@@ -167,31 +178,53 @@ for(f in results_likely$`File Name`){
            export_filename = paste0(export_filename, ".wav"),
            export_filename = gsub(pattern = paste0(OutputDirectory, "/"), replacement = "", x = export_filename)) %>% 
     group_by(export_filename) %>% 
-    summarise(file = first(file))
+    filter(export_filename == f)
   
   # Copy the first file to the likely directory
-  for(e in test$file){
-    export_filename <- test$export_filename[which(test$file == e)]
+  if(nrow(test) == 0){
+    # File not found 
+    warning(paste0(f, ": No file found"))
+    results <- results %>% 
+      mutate(remarks = case_when(
+        export_filename == f ~ "No file found",
+        TRUE ~ remarks
+      )) %>% 
+      write_csv2(file = file.path(OutputDirectory, "results.csv"))
     
-    file <- subset(file, !grepl(e, file))
+    # Is there some overlap with other files in the directory?
+    # That are not in the results
+    # If so, add these files to results
     
     file.copy(e, file.path(likely_dir, export_filename))
     file.remove(e)
   }
-  # Remove the other likely files
-  for(e in file){
-    file.remove(e)
+  
+  if(nrow(test) == 1){
+    cat("Single file found\n")
+    file.copy(test$file, file.path(likely_dir, test$export_filename))
+    file.remove(test$file)
+  }else{
+    cat("Multiple (n:", nrow(test), ") files found\n")
+    cat("Moving first file\n")
+    file.copy(test$file[1], file.path(likely_dir, test$export_filename[1]))
+    file.remove(test$file) # Remove the other likely files
   }
 }
 
 
-for(f in results_unlikely$`File Name`){
+# move files to likely/unlikely folders
+for(f in results_unlikely$export_filename){
   cat(f, "\n")
-  filelist <- list.files(OutputDirectory, pattern = f, full.names = TRUE) 
   
-  file <- subset(filelist, grepl(".wav", filelist))
+  file_results <- results_unlikely %>% 
+    filter(export_filename == f)
   
-  test <- as.data.frame(file) %>% 
+  filelist <- list.files(OutputDirectory, pattern = file_results$`File Name`, full.names = TRUE) 
+  
+  wavfiles <- subset(filelist, grepl(".wav", filelist))
+  
+  test <- as.data.frame(wavfiles) %>% 
+    rename(file = wavfiles) %>%
     mutate(export_filename = gsub(pattern = "_SVM", replacement = "", x = file),
            export_filename = gsub(pattern = "_RF", replacement = "", x = export_filename),
            export_filename = gsub(pattern = "(?<=_)\\d+(\\.\\d+)?(?=\\.wav)", replacement = "", 
@@ -201,20 +234,28 @@ for(f in results_unlikely$`File Name`){
            export_filename = paste0(export_filename, ".wav"),
            export_filename = gsub(pattern = paste0(OutputDirectory, "/"), replacement = "", x = export_filename)) %>% 
     group_by(export_filename) %>% 
-    summarise(file = first(file))
+    filter(export_filename == f)
   
-  # Copy the first file to the likely directory
-  for(e in test$file){
-    export_filename <- test$export_filename[which(test$file == e)]
-    
-    file <- subset(file, !grepl(e, file))
-    
-    file.copy(e, file.path(unlikely_dir, export_filename))
-    file.remove(e)
+  # Copy the first file to the unlikely directory
+  if(nrow(test) == 0){
+    warning(paste0(f, ": No file found"))
+    results <- results %>% 
+      mutate(remarks = case_when(
+        export_filename == f ~ "No file found",
+        TRUE ~ remarks
+      )) %>% 
+      write_csv2(file = file.path(OutputDirectory, "results.csv"))
   }
-  # Remove the other likely files
-  for(e in file){
-    file.remove(e)
+  
+  if(nrow(test) == 1){
+    cat("Single file found\n")
+    file.copy(test$file, file.path(unlikely_dir, test$export_filename))
+    file.remove(test$file)
+  }else{
+    cat("Multiple (n:", nrow(test), ") files found\n")
+    cat("Moving first file\n")
+    file.copy(test$file[1], file.path(unlikely_dir, test$export_filename[1]))
+    file.remove(test$file) # Remove the other unlikely files
   }
 }
 
