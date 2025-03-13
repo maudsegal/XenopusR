@@ -29,7 +29,7 @@ classification <- read_delim("input/testdata/classification.txt",
 
 ```{r create trainingdata from folders}
 folders <- dir("./input")
-folders <- subset(folders, !folders %in% c("trainingdata", "onbekend", "testdata"))
+folders <- subset(folders, folders %in% c("achtergrond","klauwkikker"))
 
 i <- 1
 
@@ -46,11 +46,12 @@ for(f in folders){
   filelist_trainingdata <- filelist_trainingdata[grep(f, filelist_trainingdata)]
   maxnum <- max(as.numeric(gsub("[^0-9]", "", filelist_trainingdata)))
   
+  gentestdata <- askYesNo(paste("Generate testdata for folder",f,"?"), default = "no")
+  
   for(file in filelist){
     maxnum <- maxnum + 1
     i <- i + 1
     
-    gentestdata <- askYesNo("generate testdata?", default = "no")
     
     if(gentestdata){
       
@@ -128,9 +129,9 @@ print(ml.model.rf)
 ```{r}
 source("./src/gibbonID_modified.R")
 
-gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',add.spectrograms=TRUE,min.freq=min.freq,max.freq=max.freq,class='no.clustering')
+gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',add.spectrograms=FALSE,min.freq=min.freq,max.freq=max.freq,class='no.clustering')
 
-gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',class='affinity.fixed', q.fixed=0.1,add.spectrograms=TRUE,min.freq=min.freq,max.freq=max.freq)
+gibbonID(input.dir="./input/trainingdata",output.dir="./output/test/",win.avg='standard',class='affinity.fixed', q.fixed=0.1,add.spectrograms=FALSE,min.freq=min.freq,max.freq=max.freq)
 ```
 
 ```{r save as rda}
