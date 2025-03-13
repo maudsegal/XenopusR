@@ -118,12 +118,25 @@ ml.model.svm <- e1071::svm(trainingdata[, 2:ncol(trainingdata)], trainingdata$cl
                            probability = TRUE)
 
 print(paste('SVM accuracy',ml.model.svm$tot.accuracy))
-
+confusion_matrix <- table(Actual = trainingdata$class, Predicted = ml.model.svm$fitted)
 
 ml.model.rf <- randomForest::randomForest(x=trainingdata[, 2:ncol(trainingdata)], y = trainingdata$class)
 
 
 print(ml.model.rf)
+confusion_matrix_rf <- as.data.frame(table(Actual = trainingdata$class, Predicted = ml.model.rf$predicted)) %>% 
+  mutate(model_type = "RF") %>% 
+  group_by(Actual) %>% 
+  mutate(input_actual = sum(Freq)) %>%
+  ungroup() %>%
+  mutate(correct = case_when(Actual != Predicted ~ FALSE,
+                             TRUE ~ TRUE),
+         occ = (Freq/input_actual)*100)
+confusion_matrix_svm <- as.data.frame(confusion_matrix)%>% 
+  mutate(model_type = "SVM")
+
+confusion_matrix <- rbind(confusion_matrix_rf, confusion_matrix_svm) %>% 
+  pivot_wider(names_from = model_type, values_from = Freq)
 ```
 
 ```{r}
