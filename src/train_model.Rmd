@@ -118,7 +118,7 @@ ml.model.svm <- e1071::svm(trainingdata[, 2:ncol(trainingdata)], trainingdata$cl
                            probability = TRUE)
 
 print(paste('SVM accuracy',ml.model.svm$tot.accuracy))
-confusion_matrix <- table(Actual = trainingdata$class, Predicted = ml.model.svm$fitted)
+confusion_matrix <- 
 
 ml.model.rf <- randomForest::randomForest(x=trainingdata[, 2:ncol(trainingdata)], y = trainingdata$class)
 
@@ -132,11 +132,29 @@ confusion_matrix_rf <- as.data.frame(table(Actual = trainingdata$class, Predicte
   mutate(correct = case_when(Actual != Predicted ~ FALSE,
                              TRUE ~ TRUE),
          occ = (Freq/input_actual)*100)
-confusion_matrix_svm <- as.data.frame(confusion_matrix)%>% 
-  mutate(model_type = "SVM")
+
+confusion_matrix_svm <- as.data.frame(table(Actual = trainingdata$class, Predicted = ml.model.svm$fitted)) %>% 
+  mutate(model_type = "SVM") %>% 
+  group_by(Actual) %>% 
+  mutate(input_actual = sum(Freq, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(correct = case_when(Actual != Predicted ~ FALSE,
+                             TRUE ~ TRUE),
+         occ = (Freq/input_actual)*100)
 
 confusion_matrix <- rbind(confusion_matrix_rf, confusion_matrix_svm) %>% 
-  pivot_wider(names_from = model_type, values_from = Freq)
+  pivot_wider(names_from = model_type, values_from = c(Freq, occ)) %>% 
+  mutate(runDate = Sys.Date()) %>%
+  write_csv(paste0("./output/confusion_matrix_", Sys.Date(),".csv"))
+
+model_accuracy <- confusion_matrix %>% 
+  filter(correct == TRUE) %>%
+  filter(Actual != "onbekend") %>% 
+  summarise(RF_accuracy = mean(occ_RF, na.rm = TRUE),
+            SVM_accuracy = mean(occ_SVM, na.rm = TRUE)) %>% 
+  mutate(runDate = Sys.Date()) %>% 
+  write_csv(paste0("./output/model_accuracy_", Sys.Date(), ".csv"))
+  
 ```
 
 ```{r}
