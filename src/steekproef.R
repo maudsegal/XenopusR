@@ -23,6 +23,7 @@ ui <- fluidPage(
       actionButton("score3", "Onzeker", style = "background-color: #888888; color: white;")
     ),
     mainPanel(
+      textOutput("accuracy_display"),  # Add this line to display accuracy
       DTOutput("results_table"),
       hr(),
       textOutput("selected_file_path")  # Display full file path at the bottom
@@ -50,6 +51,30 @@ server <- function(input, output, session) {
   runjs <- function(js) {
     session$sendCustomMessage(type = 'jsCode', list(code = js))
   }
+  
+  # Reactive expression for accuracy calculation ####
+  accuracy <- reactive({
+    req(rv$df)
+    
+    # Filter for assessed files
+    assessed_files <- rv$df[rv$df$final_result!="", ]
+    
+    # Calculate correct predictions
+    correct_predictions <- sum(
+      (assessed_files$model_result == "likely" & assessed_files$final_result == "Klauwkikker") |
+        (assessed_files$model_result %in% c("unlikely", "highly_unlikely") & 
+           assessed_files$final_result %in% c("Achtergrond", "Onzeker"))
+    )
+    
+    print(correct_predictions)
+    print(nrow(assessed_files))
+    
+    # Calculate accuracy
+    accuracy <- correct_predictions / nrow(assessed_files)
+    
+    # Return formatted accuracy
+    paste0("Model resultaat correct: ", correct_predictions, " van ", nrow(assessed_files), " gecontroleerde fragmenten => Accuracy:", sprintf("%.2f%%", accuracy * 100))
+  })
   
   # Display selected folder ####
   output$selected_folder <- renderText({
@@ -193,6 +218,11 @@ server <- function(input, output, session) {
     tags$audio(src = base64, type = "audio/wav", controls = TRUE, style = "width: 100%;", autoplay = TRUE)
   })
   
+  # Render accuracy ####
+  output$accuracy_display <- renderText({
+    accuracy()
+  })
+  
   # Score buttons handler ####
   observeEvent(list(input$score1, input$score2, input$score3), {
     req(rv$selected_row, rv$df)
@@ -227,8 +257,12 @@ server <- function(input, output, session) {
       
       # Highlight the clicked button
       runjs(sprintf("$('#score%s').css('background-color', 'yellow');", clicked_button))
+      
+      # Trigger accuracy recalculation
+      accuracy()
     }
   })
+  
   
   # Save on exit ####
   session$onSessionEnded(function() {
