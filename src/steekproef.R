@@ -3,7 +3,7 @@ library(shiny)
 library(shinyjs)
 library(shinyFiles)
 library(DT)
-library(howler)
+library(base64enc)
 
 # UI ####
 ui <- fluidPage(
@@ -16,8 +16,7 @@ ui <- fluidPage(
       numericInput("sample_num", "Sample Number:", value = 50, min = 1),
       actionButton("run", "Run", class = "btn-primary"),
       hr(),
-      uiOutput("audio"),  # This will now be populated with howler player
-      howlerPlayPauseButton("audio"),  # Add play/pause button
+      uiOutput("audio"),  # This will be populated with HTML5 audio player
       hr(),
       actionButton("score1", "Klauwkikker", style = "background-color: #ff4444; color: white;"),
       actionButton("score2", "Achtergrond", style = "background-color: #44ff44; color: black;"),
@@ -28,7 +27,12 @@ ui <- fluidPage(
       hr(),
       textOutput("selected_file_path")  # Display full file path at the bottom
     )
-  )
+  ),
+  tags$script("
+    Shiny.addCustomMessageHandler('jsCode', function(message) {
+      eval(message.code);
+    });
+  ")
 )
 
 # Server ####
@@ -43,11 +47,33 @@ server <- function(input, output, session) {
     current_audio = NULL  # To store the current audio file path
   )
   
+  runjs <- function(js) {
+    session$sendCustomMessage(type = 'jsCode', list(code = js))
+  }
   
   # Display selected folder ####
   output$selected_folder <- renderText({
     req(input$folder)
+    
+    # Parse the selected folder path
     rv$folder_path <- parseDirPath(volumes, input$folder)
+    
+    # Ensure folder_path is valid before proceeding
+    if (!is.null(rv$folder_path) && nzchar(rv$folder_path)) {
+      # Check if steekproef_results.csv exists and load it
+      results_file <- file.path(rv$folder_path, "steekproef_results.csv")
+      if (file.exists(results_file)) {
+        rv$df <- read.csv(results_file, stringsAsFactors = FALSE)
+        print("Loaded existing steekproef_results.csv")
+      } else {
+        rv$df <- NULL
+        print("No existing steekproef_results.csv found")
+      }
+    } else {
+      rv$df <- NULL
+      print("Invalid folder path")
+    }
+    
     rv$folder_path
   })
   
@@ -119,20 +145,22 @@ server <- function(input, output, session) {
       rv$df[, c("file_name", "model_result", "final_result")],
       selection = 'single',
       options = list(
+        stateSave = TRUE,
+        stateDuration = -1,  # Save state in sessionStorage
+        pageLength = input$sample_num * 3,  # Set a consistent page length
         columnDefs = list(list(
           targets = 0,
           render = JS("
-          function(data, type, row, meta) {
-            return '<span title=\"' + row[1] + '\">' + data + '</span>';
-          }
-        ")
+        function(data, type, row, meta) {
+          return '<span title=\"' + row[1] + '\">' + data + '</span>';
+        }
+      ")
         ))
       )
     )
   })
   
   # Update selected row ####
-  rv$audio_update <- reactiveVal(0)
   observeEvent(input$results_table_rows_selected, {
     rv$selected_row <- input$results_table_rows_selected
     if (!is.null(rv$selected_row) && !is.null(rv$df)) {
@@ -151,14 +179,6 @@ server <- function(input, output, session) {
         print(paste("File does not exist:", rv$current_audio))
       }
     }
-    changeTrack("audio", rv$current_audio)
-    rv$audio_update(rv$audio_update() + 1)
-  })
-  
-  observeEvent(rv$current_audio, {
-    if (!is.null(rv$current_audio)) {
-      changeTrack("audio", rv$current_audio)
-    }
   })
   
   output$selected_file_path <- renderText({
@@ -167,31 +187,56 @@ server <- function(input, output, session) {
   })
   
   # Audio player ####
-  output$audio_player <- renderUI({
-    req(rv$current_audio, rv$audio_update())
-    howler(
-      elementId = "audio",
-      tracks = list(rv$current_audio),
-      seek_ping_rate = 1000
-    )
+  output$audio <- renderUI({
+    req(rv$current_audio)
+    base64 <- dataURI(file = rv$current_audio, mime = "audio/wav")
+    tags$audio(src = base64, type = "audio/wav", controls = TRUE, style = "width: 100%;", autoplay = TRUE)
   })
   
   # Score buttons handler ####
   observeEvent(list(input$score1, input$score2, input$score3), {
-    req(rv$selected_row)
-    score <- c("Klauwkikker", "Achtergrond", "Onzeker")[which(c(input$score1, input$score2, input$score3) > 0)]
-    rv$df$final_result[rv$selected_row] <- score
-    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
-    # Refresh the table
-    dataTableProxy("results_table") %>% 
-      replaceData(rv$df[, c("file_name", "model_result", "final_result")])
+    req(rv$selected_row, rv$df)
+    
+    # Determine which button was clicked
+    clicked_button <- which(c(input$score1, input$score2, input$score3) > 0)
+    
+    if (length(clicked_button) > 0) {
+      score <- c("Klauwkikker", "Achtergrond", "Onzeker")[clicked_button]
+      
+      # Update the final_result column for the selected row
+      rv$df$final_result[rv$selected_row] <- score
+      
+      # Write updated data to CSV
+      write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+      
+      # Get current table state
+      current_state <- input$results_table_state
+      
+      # Refresh the table while maintaining the current state
+      dataTableProxy("results_table") %>%
+        replaceData(rv$df[, c("file_name", "model_result", "final_result")], 
+                    resetPaging = FALSE, 
+                    rownames = FALSE) %>%
+        selectRows(rv$selected_row) %>%
+        selectPage(as.integer(current_state$start / current_state$length) + 1)
+      
+      # Reset all button colors
+      runjs("$('#score1').css('background-color', '#ff4444');")
+      runjs("$('#score2').css('background-color', '#44ff44');")
+      runjs("$('#score3').css('background-color', '#888888');")
+      
+      # Highlight the clicked button
+      runjs(sprintf("$('#score%s').css('background-color', 'yellow');", clicked_button))
+    }
   })
   
   # Save on exit ####
   session$onSessionEnded(function() {
-    if(!is.null(rv$df) && !is.null(rv$folder_path)) {
-      write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
-    }
+    observe({
+      if(!is.null(rv$df) && !is.null(rv$folder_path)) {
+        write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+      }
+    })
   })
 }
 
