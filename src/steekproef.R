@@ -55,13 +55,17 @@ server <- function(input, output, session) {
   volumes <- c(Home = normalizePath("~/Github/XenopusR/Output/"))
   shinyDirChoose(input, "folder", roots = volumes, session = session)
   
+  # Reactive values ####
   rv <- reactiveValues(
     df = NULL,
     selected_row = NULL,
     folder_path = NULL,
-    current_audio = NULL  # To store the current audio file path
+    current_audio = NULL,  # To store the current audio file path
+    all_files = NULL,  # Add this line to store all sampled files
+    min_sample_num = NULL  # Add this line
   )
   
+  # Function to parse the selected folder path ####
   runjs <- function(js) {
     session$sendCustomMessage(type = 'jsCode', list(code = js))
   }
@@ -116,65 +120,68 @@ server <- function(input, output, session) {
     rv$folder_path
   })
   
+  # Function to sample files and create dataframe ####
+  sampleFiles <- function(sample_num) {
+    categories <- c("likely", "unlikely", "highly_unlikely")
+    sampled_files <- lapply(rv$all_files, function(files) {
+      if (length(files) >= sample_num) {
+        sample(files, size = sample_num)
+      } else {
+        # If there are fewer files than the sample size, use all available files
+        files
+      }
+    })
+    files <- unlist(sampled_files)
+    rv$df <- data.frame(
+      file_name = basename(files),
+      full_path = files,
+      model_result = rep(categories, sapply(sampled_files, length)),
+      final_result = "",
+      stringsAsFactors = FALSE
+    )
+    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+  }
+  
   # Run button handler ####
   observeEvent(input$run, {
     req(rv$folder_path)
     categories <- c("likely", "unlikely", "highly_unlikely")
-    all_files <- list()
+    rv$all_files <- list()  # Use rv$all_files instead of all_files
+    rv$min_sample_num <- input$sample_num # Store min_sample_num in rv
     
     for(cat in categories) {
       cat_path <- file.path(rv$folder_path, cat)
       cat_files <- list.files(cat_path, pattern = "\\.wav$", full.names = TRUE)
-      
-      if(length(cat_files) < input$sample_num) {
-        showModal(modalDialog(
-          title = "Warning",
-          paste("Less than", input$sample_num, "files found in", cat, "! Continue?"),
-          footer = tagList(
-            modalButton("No"),
-            actionButton("yes", "Yes")
-          )
-        ))
-        return()
-      }
-      
-      all_files[[cat]] <- sample(cat_files, size = input$sample_num)
+      rv$all_files[[cat]] <- cat_files  # Update rv$all_files
+      min_sample_num <- length(cat_files)
+      rv$min_sample_num <- min(rv$min_sample_num, min_sample_num)  # Update min_sample_num
     }
     
-    files <- unlist(all_files)
-    rv$df <- data.frame(
-      file_name = basename(files),
-      full_path = files,
-      model_result = rep(categories, each = input$sample_num),
-      final_result = "",
-      stringsAsFactors = FALSE
-    )
+    # Check if any category has fewer files than requested
+    if(min_sample_num < input$sample_num) {
+      showModal(modalDialog(
+        title = "Warning",
+        paste("Some categories have fewer than", input$sample_num, "files. Continue with", rv$min_sample_num, "files per category?"),
+        footer = tagList(
+          modalButton("No"),
+          actionButton("yes_continue", "Yes")
+        )
+      ))
+      sampleFiles(min_sample_num)
+      return()
+    }else{
+      sampleFiles(input$sample_num)
+      return()
+    }
     
-    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+    # If no issues, proceed with sampling
+    
   })
   
-  # Confirm proceed with insufficient files ####
-  observeEvent(input$yes, {
+  # Handle 'Yes' response to continue with fewer files
+  observeEvent(input$yes_continue, {
     removeModal()
-    categories <- c("likely", "unlikely", "highly_unlikely")
-    all_files <- list()
-    
-    for(cat in categories) {
-      cat_path <- file.path(rv$folder_path, cat)
-      cat_files <- list.files(cat_path, pattern = "\\.wav$", full.names = TRUE)
-      all_files[[cat]] <- cat_files
-    }
-    
-    files <- unlist(all_files)
-    rv$df <- data.frame(
-      file_name = basename(files),
-      full_path = files,
-      model_result = rep(categories, sapply(all_files, length)),
-      final_result = "",
-      stringsAsFactors = FALSE
-    )
-    
-    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+    sampleFiles(rv$min_sample_num)
   })
   
   # Results table ####
