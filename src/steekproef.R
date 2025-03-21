@@ -7,33 +7,47 @@ library(base64enc)
 
 # UI ####
 ui <- fluidPage(
-  useShinyjs(),
-  titlePanel("Audio Sample Validation Tool"),
-  sidebarLayout(
-    sidebarPanel(
-      shinyDirButton("folder", "Select Output Folder", "Select Folder"),
-      verbatimTextOutput("selected_folder"),
-      numericInput("sample_num", "Sample Number:", value = 50, min = 1),
-      actionButton("run", "Run", class = "btn-primary"),
-      hr(),
-      uiOutput("audio"),  # This will be populated with HTML5 audio player
-      hr(),
-      actionButton("score1", "Klauwkikker", style = "background-color: #ff4444; color: white;"),
-      actionButton("score2", "Achtergrond", style = "background-color: #44ff44; color: black;"),
-      actionButton("score3", "Onzeker", style = "background-color: #888888; color: white;")
-    ),
-    mainPanel(
-      textOutput("accuracy_display"),  # Add this line to display accuracy
-      DTOutput("results_table"),
-      hr(),
-      textOutput("selected_file_path")  # Display full file path at the bottom
-    )
+  tags$head(
+    tags$style(HTML("
+      .scrolling-sidebar {
+        position: fixed;
+        top: 1;
+        bottom: 1;
+        left: 0;
+        overflow-y: auto;
+        width: 25%; /* Adjust as needed */
+        padding: 25px;
+      }
+    "))
   ),
   tags$script("
     Shiny.addCustomMessageHandler('jsCode', function(message) {
       eval(message.code);
     });
-  ")
+  "),
+  useShinyjs(),
+  titlePanel("Audio Sample Validation Tool"),
+  sidebarLayout(
+    sidebarPanel(
+      class = "scrolling-sidebar",
+      shinyDirButton("folder", "Select Output Folder", "Select Folder"),
+      verbatimTextOutput("selected_folder"),
+      numericInput("sample_num", "Sample Number:", value = 50, min = 1),
+      actionButton("run", "Nieuwe steekproef", class = "btn-primary"),
+      hr(),
+      uiOutput("audio"),  # This will be populated with HTML5 audio player
+      hr(),
+      actionButton("score1", "Klauwkikker", style = "background-color: #ff4444; color: white;"),
+      actionButton("score2", "Achtergrond", style = "background-color: #44ff44; color: black;"),
+      actionButton("score3", "Onzeker", style = "background-color: #888888; color: white;"),
+      textOutput("accuracy_display")  # Add this line to display accuracy
+    ),
+    mainPanel(
+      DTOutput("results_table"),
+      hr(),
+      textOutput("selected_file_path")  # Display full file path at the bottom
+    )
+  )
 )
 
 # Server ####
@@ -231,6 +245,9 @@ server <- function(input, output, session) {
     clicked_button <- which(c(input$score1, input$score2, input$score3) > 0)
     
     if (length(clicked_button) > 0) {
+      # Highlight the clicked button
+      runjs(sprintf("$('#score%s').css('background-color', 'yellow');", clicked_button))
+      
       score <- c("Klauwkikker", "Achtergrond", "Onzeker")[clicked_button]
       
       # Update the final_result column for the selected row
@@ -255,8 +272,9 @@ server <- function(input, output, session) {
       runjs("$('#score2').css('background-color', '#44ff44');")
       runjs("$('#score3').css('background-color', '#888888');")
       
-      # Highlight the clicked button
-      runjs(sprintf("$('#score%s').css('background-color', 'yellow');", clicked_button))
+      # Reset score & clicked_button
+      score <- NULL
+      clicked_button <- NULL
       
       # Trigger accuracy recalculation
       accuracy()
