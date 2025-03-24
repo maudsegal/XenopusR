@@ -1,4 +1,5 @@
 # Setup ####
+library(dplyr)
 library(shiny)
 library(shinyjs)
 library(shinyFiles)
@@ -62,7 +63,8 @@ server <- function(input, output, session) {
     folder_path = NULL,
     current_audio = NULL,  # To store the current audio file path
     all_files = NULL,  # Add this line to store all sampled files
-    min_sample_num = NULL  # Add this line
+    min_sample_num = NULL,  # Add this line
+    final_result = ""
   )
   
   # Function to parse the selected folder path ####
@@ -245,49 +247,38 @@ server <- function(input, output, session) {
   })
   
   # Score buttons handler ####
-  observeEvent(list(input$score1, input$score2, input$score3), {
+  observeEvent(input$score1, {
     req(rv$selected_row, rv$df)
+    rv$df$final_result[rv$selected_row] <- "Klauwkikker"
     
-    # Determine which button was clicked
-    clicked_button <- which(c(input$score1, input$score2, input$score3) > 0)
+    # Write updated data to CSV
+    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
     
-    if (length(clicked_button) > 0) {
-      # Highlight the clicked button
-      runjs(sprintf("$('#score%s').css('background-color', 'yellow');", clicked_button))
-      
-      score <- c("Klauwkikker", "Achtergrond", "Onzeker")[clicked_button]
-      
-      # Update the final_result column for the selected row
-      rv$df$final_result[rv$selected_row] <- score
-      
-      # Write updated data to CSV
-      write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
-      
-      # Get current table state
-      current_state <- input$results_table_state
-      
-      # Refresh the table while maintaining the current state
-      dataTableProxy("results_table") %>%
-        replaceData(rv$df[, c("file_name", "model_result", "final_result")], 
-                    resetPaging = FALSE, 
-                    rownames = FALSE) %>%
-        selectRows(rv$selected_row) %>%
-        selectPage(as.integer(current_state$start / current_state$length) + 1)
-      
-      # Reset all button colors
-      runjs("$('#score1').css('background-color', '#ff4444');")
-      runjs("$('#score2').css('background-color', '#44ff44');")
-      runjs("$('#score3').css('background-color', '#888888');")
-      
-      # Reset score & clicked_button
-      score <- NULL
-      clicked_button <- NULL
-      
-      # Trigger accuracy recalculation
-      accuracy()
-    }
+    # Trigger accuracy recalculation
+    accuracy()
   })
   
+  observeEvent(input$score2, {
+    req(rv$selected_row, rv$df)
+    rv$df$final_result[rv$selected_row] <- "Achtergrond"
+    
+    # Write updated data to CSV
+    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+    
+    # Trigger accuracy recalculation
+    accuracy()
+  })
+  
+  observeEvent(input$score3, {
+    req(rv$selected_row, rv$df)
+    rv$df$final_result[rv$selected_row] <- "Onzeker"
+    
+    # Write updated data to CSV
+    write.csv(rv$df, file.path(rv$folder_path, "steekproef_results.csv"), row.names = FALSE)
+    
+    # Trigger accuracy recalculation
+    accuracy()
+  })
   
   # Save on exit ####
   session$onSessionEnded(function() {
