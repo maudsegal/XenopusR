@@ -169,7 +169,7 @@ server <- function(input, output, session) {
           actionButton("yes_continue", "Yes")
         )
       ))
-      sampleFiles(min_sample_num)
+      sampleFiles(input$sample_num)
       return()
     }else{
       sampleFiles(input$sample_num)
