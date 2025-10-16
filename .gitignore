@@ -50,3 +50,4 @@ rsconnect/
 
 # back ups 
 input/trainingdata_backup_17-3-2025/*
+*.wav
