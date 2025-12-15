@@ -69,34 +69,44 @@ if(length(list.files(OutputDirectory)) > 0){
 }
 ```
 
+```{r skip model?}
+if(length(list.files(OutputDirectory)) > 0){
+  rerun <- askYesNo(msg = "Er staan nog resultaten in de output directory. Wil je  het model opnieuw lopen?")
+}else{
+  rerun <- TRUE
+}
+```
+
 ```{r}
-gibbonR(input = TestFileDirectory,
-        input.type = "directory",
-        feature.df = trained_model,
-        model.type.list = c('SVM','RF'),
-        tune = TRUE,
-        short.wav.duration = 300,
-        target.signal = c("klauwkikker"),
-        min.freq = min.freq, 
-        max.freq = max.freq,
-        noise.quantile.val = 0.15,
-        minimum.separation = 3,
-        n.windows = 9, num.cep = 12,
-        spectrogram.window = 160,
-        pattern.split = ".wav",
-        min.signal.dur = 1,
-        max.sound.event.dur = 25,
-        maximum.separation = 1,
-        probability.thresh.svm = 0.15,
-        probability.thresh.rf = 0.15,
-        wav.output = "TRUE",
-        output.dir = OutputDirectory,
-        swift.time = FALSE,
-        time.start = 0,
-        time.stop = 25,
-        write.table.output=TRUE,
-        verbose=TRUE,
-        random.sample='NA')
+if(rerun){
+  gibbonR(input = TestFileDirectory,
+          input.type = "directory",
+          feature.df = trained_model,
+          model.type.list = c('SVM','RF'),
+          tune = TRUE,
+          short.wav.duration = 300,
+          target.signal = c("klauwkikker"),
+          min.freq = min.freq, 
+          max.freq = max.freq,
+          noise.quantile.val = 0.15,
+          minimum.separation = 3,
+          n.windows = 9, num.cep = 12,
+          spectrogram.window = 160,
+          pattern.split = ".wav",
+          min.signal.dur = 1,
+          max.sound.event.dur = 25,
+          maximum.separation = 1,
+          probability.thresh.svm = 0.15,
+          probability.thresh.rf = 0.15,
+          wav.output = "TRUE",
+          output.dir = OutputDirectory,
+          swift.time = FALSE,
+          time.start = 0,
+          time.stop = 25,
+          write.table.output=TRUE,
+          verbose=TRUE,
+          random.sample='NA')  
+}
 ```
 
 ```{r read result files}
@@ -116,7 +126,7 @@ for(i in 1:length(txt_files)){
   if(nrow(results_long) == 0){
     results_long <- temp_result
   }else{
-     results_long <- rbind(results_long, temp_result)
+    results_long <- rbind(results_long, temp_result)
   }
   setTxtProgressBar(pb, i)
 }
@@ -273,18 +283,18 @@ for(f in results_likely$export_filename){
     
     if(nrow(test2) == 0){
       results <- results %>% 
-      mutate(remarks = case_when(
-        export_filename == f ~ "No file found & No overlap found",
-        TRUE ~ remarks
-      )) %>% 
-      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+        mutate(remarks = case_when(
+          export_filename == f ~ "No file found & No overlap found",
+          TRUE ~ remarks
+        )) %>% 
+        write_csv2(file = file.path(OutputDirectory, "results.csv"))
     }else{
       results <- results %>% 
-      mutate(remarks = case_when(
-        export_filename == f ~ "No file found >> overlap found",
-        TRUE ~ remarks
-      )) %>% 
-      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+        mutate(remarks = case_when(
+          export_filename == f ~ "No file found >> overlap found",
+          TRUE ~ remarks
+        )) %>% 
+        write_csv2(file = file.path(OutputDirectory, "results.csv"))
     }
     
     # Add files to results
@@ -443,18 +453,18 @@ for(f in results_unlikely$export_filename){
     
     if(nrow(test2) == 0){
       results <- results %>% 
-      mutate(remarks = case_when(
-        export_filename == f ~ "No file found & No overlap found",
-        TRUE ~ remarks
-      )) %>% 
-      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+        mutate(remarks = case_when(
+          export_filename == f ~ "No file found & No overlap found",
+          TRUE ~ remarks
+        )) %>% 
+        write_csv2(file = file.path(OutputDirectory, "results.csv"))
     }else{
       results <- results %>% 
-      mutate(remarks = case_when(
-        export_filename == f ~ "No file found >> overlap found",
-        TRUE ~ remarks
-      )) %>% 
-      write_csv2(file = file.path(OutputDirectory, "results.csv"))
+        mutate(remarks = case_when(
+          export_filename == f ~ "No file found >> overlap found",
+          TRUE ~ remarks
+        )) %>% 
+        write_csv2(file = file.path(OutputDirectory, "results.csv"))
     }
     
     # Add files to results
