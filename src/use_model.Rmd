@@ -101,16 +101,25 @@ gibbonR(input = TestFileDirectory,
 
 ```{r read result files}
 # read txt files in output directory
-results_long <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE) %>%
-  {
-    pb <- progress_bar$new(total = 100, format = "[:bar] :percent :eta", force = TRUE)
-    map_dfr(., function(file) {
-      if (which(. == file) %% max(1, round(length(.) / 100)) == 0) {
-        pb$tick()
-      }
-      read_tsv(file, show_col_types = FALSE)
-    })
+txt_files <- list.files(OutputDirectory, pattern = ".txt", full.names = TRUE)
+
+results_long <- data.frame()
+
+pb <- txtProgressBar(min = 0, max = length(txt_files), style = 3)
+
+for(i in 1:length(txt_files)){
+  
+  file <- txt_files[i]
+  
+  temp_result <- read_tsv(file, show_col_types = FALSE)
+  
+  if(nrow(results_long) == 0){
+    results_long <- temp_result
+  }else{
+     results_long <- rbind(results_long, temp_result)
   }
+  setTxtProgressBar(pb, i)
+}
 ```
 
 ```{r process results}  
