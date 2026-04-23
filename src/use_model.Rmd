@@ -78,6 +78,40 @@ if(length(list.files(OutputDirectory)) > 0){
 ```
 
 ```{r}
+files_input <- dir(TestFileDirectory, full.names = TRUE) %>% 
+  as.data.frame() %>% 
+  rename(file = 1) %>% 
+  mutate(filename = basename(file),
+         path = gsub(filename, 
+                     replacement = "",
+                     file))
+
+non_wav_files <- files_input %>% 
+  filter(!grepl(pattern = ".wav",
+                file))
+
+if(nrow(non_wav_files) > 0){
+  
+  non_wav_dir <- paste0(TestFileDirectory, "/non_wav")
+  
+  cat(nrow(non_wav_files), "non-wav bestanden aanwezig in de input directory => moving them to", non_wav_dir)
+  
+  dir.create(non_wav_dir)
+  
+  for(n in 1:nrow(non_wav_files)){
+    file_to_move <- non_wav_files[n,]
+   
+    file.copy(from = file_to_move$file,
+              to = paste0(non_wav_dir, "/", file_to_move$filename))
+    
+    file.remove(file_to_move$file)
+  }
+}else{
+  cat("geen non-wav bestanden aanwezig in de input directory")
+}
+```
+
+```{r}
 if(rerun){
   gibbonR(input = TestFileDirectory,
           input.type = "directory",

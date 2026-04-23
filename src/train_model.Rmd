@@ -21,7 +21,7 @@ library(randomForest)
 ```
 
 ```{r get testdata classificationfile}
-classification <- read_delim("input/testdata/classification.txt", 
+classification <- read_delim("input/testdata/non_wav/classification.txt", 
                              delim = ";", escape_double = FALSE, col_types = cols(filename = col_character(), 
                                                                                   classification = col_character()), 
                              trim_ws = TRUE)
