@@ -83,7 +83,8 @@ server <- function(input, output, session) {
     correct_predictions <- sum(
       (assessed_files$model_result == "likely" & assessed_files$final_result == "Klauwkikker") |
         (assessed_files$model_result %in% c("unlikely", "highly_unlikely") & 
-           assessed_files$final_result %in% c("Achtergrond", "Onzeker"))
+           assessed_files$final_result %in% c("Achtergrond", "Onzeker")),
+      na.rm = TRUE
     )
     
     print(correct_predictions)
@@ -156,7 +157,7 @@ server <- function(input, output, session) {
       cat_files <- list.files(cat_path, pattern = "\\.wav$", full.names = TRUE)
       rv$all_files[[cat]] <- cat_files  # Update rv$all_files
       min_sample_num <- length(cat_files)
-      rv$min_sample_num <- min(rv$min_sample_num, min_sample_num)  # Update min_sample_num
+      rv$min_sample_num <- min(rv$min_sample_num, min_sample_num, na.rm = TRUE)  # Update min_sample_num
     }
     
     # Check if any category has fewer files than requested
